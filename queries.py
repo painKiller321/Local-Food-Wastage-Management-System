@@ -26,11 +26,14 @@ def get_candidate_db_urls(raw_url: str):
     else:
         rest = url
     
+    # For pg8000, strip sslmode parameter as pg8000 uses ssl_context
+    pg8000_rest = rest.replace("?sslmode=require", "").replace("&sslmode=require", "")
+
     # Try psycopg2 first, then psycopg 3, then pure-python pg8000
     return [
         f"postgresql+psycopg2://{rest}",
         f"postgresql+psycopg://{rest}",
-        f"postgresql+pg8000://{rest}",
+        f"postgresql+pg8000://{pg8000_rest}",
     ]
 
 def get_sqlite_url():
@@ -254,17 +257,46 @@ def get_food_item_by_id(food_id):
     df = safe_read_sql(query, params={"fid": int(food_id)})
     return df.iloc[0].to_dict() if not df.empty else None
 
-# 0. Helper: Claim food item
-def claim_food_item(food_id, receiver_id, status='Completed'):
+# 0. Helper: Claim food item and deduct remaining inventory
+def claim_food_item(food_id, receiver_id, quantity=None, status='Completed'):
+    """Logs claim in claims table and decrements available quantity in food_listings."""
     with engine.begin() as conn:
         max_claim = conn.execute(text("SELECT COALESCE(MAX(claim_id), 0) FROM claims")).scalar()
         new_claim_id = int(max_claim or 0) + 1
         now_str = pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        # Check and update food listing quantity
+        curr_qty = conn.execute(text("SELECT quantity FROM food_listings WHERE food_id = :fid"), {"fid": int(food_id)}).scalar()
+        if curr_qty is not None:
+            curr_qty = int(curr_qty)
+            claim_qty = int(quantity) if quantity is not None else curr_qty
+            new_qty = max(0, curr_qty - claim_qty)
+            conn.execute(text("UPDATE food_listings SET quantity = :qty WHERE food_id = :fid"), {"qty": new_qty, "fid": int(food_id)})
+
         conn.execute(text("""
             INSERT INTO claims (claim_id, food_id, receiver_id, status, timestamp)
             VALUES (:cid, :fid, :rid, :status, :ts)
         """), {"cid": new_claim_id, "fid": int(food_id), "rid": int(receiver_id), "status": status, "ts": now_str})
         return new_claim_id
+
+# 0. Helper: Update claim status (e.g. Pending -> Completed)
+def update_claim_status(claim_id, new_status):
+    with engine.begin() as conn:
+        res = conn.execute(text("UPDATE claims SET status = :st WHERE claim_id = :cid"), {"st": new_status, "cid": int(claim_id)})
+        return res.rowcount > 0
+
+# 0. Helper: Get listings expiring soonest
+def get_expiring_soon_listings(limit=6):
+    query = """
+    SELECT f.food_id, f.food_name, f.quantity, f.expiry_date,
+           f.food_type, f.meal_type, f.location, p.name AS provider_name
+    FROM food_listings f
+    LEFT JOIN providers p ON f.provider_id = p.provider_id
+    WHERE f.quantity > 0
+    ORDER BY f.expiry_date ASC, f.food_id ASC
+    LIMIT :limit
+    """
+    return safe_read_sql(query, params={"limit": limit})
 
 # 0. Helper: Get detailed claims log
 def get_claims_detailed(limit=50):
@@ -308,10 +340,12 @@ def get_eco_impact_metrics():
         "water_saved_liters": water_saved_liters
     }
 
-# 0. Helper: Get food listings with optional filters and join provider info
-def get_all_food_listings(food_type=None, meal_type=None, city=None, search_query=None):
+# 0. Helper: Get food listings with optional filters, search, and sorting
+def get_all_food_listings(food_type=None, meal_type=None, city=None, search_query=None, in_stock_only=False, sort_by="newest"):
     conditions = []
     params = {}
+    if in_stock_only:
+        conditions.append("f.quantity > 0")
     if food_type and food_type != "All":
         conditions.append("LOWER(f.food_type) = LOWER(:food_type)")
         params["food_type"] = food_type
@@ -325,6 +359,16 @@ def get_all_food_listings(food_type=None, meal_type=None, city=None, search_quer
         conditions.append("(LOWER(f.food_name) LIKE LOWER(:sq) OR LOWER(f.location) LIKE LOWER(:sq) OR LOWER(p.name) LIKE LOWER(:sq))")
         params["sq"] = f"%{search_query.strip()}%"
 
+    order_map = {
+        "newest": "f.food_id DESC",
+        "oldest": "f.food_id ASC",
+        "expiring_soon": "f.expiry_date ASC, f.food_id ASC",
+        "qty_high": "f.quantity DESC",
+        "qty_low": "f.quantity ASC",
+        "name_asc": "f.food_name ASC",
+    }
+    order_clause = order_map.get(sort_by, "f.food_id DESC")
+
     where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
     query = f"""
     SELECT f.food_id, f.food_name, f.quantity, f.expiry_date, 
@@ -333,7 +377,7 @@ def get_all_food_listings(food_type=None, meal_type=None, city=None, search_quer
     FROM food_listings f
     LEFT JOIN providers p ON f.provider_id = p.provider_id
     {where_clause} 
-    ORDER BY f.food_id DESC
+    ORDER BY {order_clause}
     """
     return safe_read_sql(query, params=params)
 
