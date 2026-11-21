@@ -10,49 +10,64 @@ FOOD_COLORS = {"Vegetarian": "tag-green", "Non-Vegetarian": "tag-red", "Vegan": 
 MEAL_COLORS = {"Breakfast": "tag-orange", "Lunch": "tag-orange", "Dinner": "tag-purple", "Snacks": "tag-blue"}
 
 def display():
-    st.markdown("""
-    <div class='page-header'>
-        <div class='badge'>🍱 Food Inventory</div>
-        <h1>🍱 Food Listings</h1>
-        <p>Browse, search, and filter all available surplus food donations across the network.</p>
-    </div>
-    """, unsafe_allow_html=True)
+    head_c1, head_c2 = st.columns([4, 1])
+    with head_c1:
+        st.markdown("""
+        <div class='page-header' style='margin-bottom:14px'>
+            <div class='badge'>🌍 Live Global Inventory</div>
+            <h1>🍱 Surplus & Leftover Food Listings</h1>
+            <p>Real-time food donations posted by restaurants and providers across all cities worldwide.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with head_c2:
+        st.markdown("<div style='padding-top:20px'></div>", unsafe_allow_html=True)
+        if st.button("🔄 Refresh Data", use_container_width=True, help="Fetch latest food additions and leftover updates"):
+            st.rerun()
 
     # ── Filter Bar ───────────────────────────────────────────────────────────
     st.markdown("<div class='section-card'>", unsafe_allow_html=True)
-    st.markdown("<h3>🔍 Search & Filter</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>🔍 Search & Global City Filter</h3>", unsafe_allow_html=True)
+
+    all_cities = queries.get_all_cities()
+    city_options = ["All Cities"] + sorted(list(set(all_cities)))
+
     fc1, fc2, fc3, fc4 = st.columns([2, 1, 1, 1])
     with fc1:
-        search = st.text_input("🔎 Search food name, city, or provider", placeholder="e.g. Rice, Pizza, NGO...")
+        search = st.text_input("🔎 Search Food, Restaurant, or City", placeholder="e.g. Biryani, Pizza, Hilton, Mumbai...")
     with fc2:
-        food_type = st.selectbox("🥗 Food Type", ["All", "Vegetarian", "Non-Vegetarian", "Vegan"])
+        food_type = st.selectbox("🥗 Dietary Type", ["All", "Vegetarian", "Non-Vegetarian", "Vegan"])
     with fc3:
-        meal_type = st.selectbox("🕐 Meal Type", ["All", "Breakfast", "Lunch", "Dinner", "Snacks"])
+        meal_type = st.selectbox("🕐 Meal Category", ["All", "Breakfast", "Lunch", "Dinner", "Snacks"])
     with fc4:
-        city_filter = st.text_input("📍 City / Location", placeholder="e.g. Springfield")
+        selected_city = st.selectbox("📍 City / Region", city_options)
+
     st.markdown("</div>", unsafe_allow_html=True)
 
     # ── Load Data ────────────────────────────────────────────────────────────
+    city_query = None if selected_city == "All Cities" else selected_city
     df = queries.get_all_food_listings(
         food_type=food_type if food_type != "All" else None,
         meal_type=meal_type if meal_type != "All" else None,
-        city=city_filter if city_filter.strip() else None,
-        search_query=search if search.strip() else None,
+        city=city_query,
+        search_query=search.strip() if search.strip() else None,
     )
 
     # ── Stats Row ────────────────────────────────────────────────────────────
     total_qty = int(df['Quantity'].sum()) if not df.empty else 0
+    active_listings = len(df[df['Quantity'] > 0]) if not df.empty else 0
+
     mc = f"<div class='metric-row'>"
-    mc += f"<div class='metric-card green'><div class='mc-icon'>📦</div><div class='mc-value'>{len(df):,}</div><div class='mc-label'>Listings Found</div></div>"
-    mc += f"<div class='metric-card orange'><div class='mc-icon'>🍱</div><div class='mc-value'>{total_qty:,}</div><div class='mc-label'>Total Food Units</div></div>"
+    mc += f"<div class='metric-card green'><div class='mc-icon'>📦</div><div class='mc-value'>{len(df):,}</div><div class='mc-label'>Total Listings</div></div>"
+    mc += f"<div class='metric-card teal'><div class='mc-icon'>⚡</div><div class='mc-value'>{active_listings:,}</div><div class='mc-label'>Available Listings</div></div>"
+    mc += f"<div class='metric-card orange'><div class='mc-icon'>🍱</div><div class='mc-value'>{total_qty:,}</div><div class='mc-label'>Total Food Portions</div></div>"
     if not df.empty and 'Food_Type' in df.columns:
         veg_pct = round(len(df[df['Food_Type']=='Vegetarian'])/len(df)*100)
-        mc += f"<div class='metric-card teal'><div class='mc-icon'>🥦</div><div class='mc-value'>{veg_pct}%</div><div class='mc-label'>Vegetarian Share</div></div>"
+        mc += f"<div class='metric-card blue'><div class='mc-icon'>🥦</div><div class='mc-value'>{veg_pct}%</div><div class='mc-label'>Vegetarian Share</div></div>"
     mc += "</div>"
     st.markdown(mc, unsafe_allow_html=True)
 
     if df.empty:
-        st.info("🔍 No food listings match your current filters. Try adjusting the search criteria.")
+        st.info("🔍 No food listings match your current filters. If a restaurant just added food, try clearing filters or clicking **'🔄 Refresh Data'**.")
         return
 
     # ── Tabs: Card View / Table View / Analytics ─────────────────────────────
@@ -75,24 +90,30 @@ def display():
             fc_cls = FOOD_COLORS.get(ft, "tag-green")
             mc_cls = MEAL_COLORS.get(mt, "tag-orange")
             provider = str(row.get('Provider_Name') or row.get('Provider_Type', ''))
+            contact = str(row.get('Provider_Contact') or '')
             expiry   = str(row.get('Expiry_Date', 'N/A'))
             city     = str(row.get('Location', ''))
+            qty      = int(row['Quantity'])
+
+            qty_badge = f"<span class='fc-qty'>{qty}</span> <span class='fc-qty-label'>units available</span>" if qty > 0 else "<span style='color:#ef4444;font-weight:700;font-size:0.95rem'>🔴 Out of Stock / Claimed</span>"
+            contact_html = f"<div style='font-size:0.75rem;color:#047857;margin-top:4px'>📞 {contact}</div>" if contact else ""
+
             with cols[idx % 3]:
                 st.markdown(f"""
                 <div class='food-card'>
                     <div class='fc-corner'></div>
                     <div style='font-size:1.5rem;margin-bottom:4px'>{fi}</div>
                     <div class='fc-title'>{row['Food_Name']}</div>
-                    <div class='fc-provider'>📍 {city}  •  🏢 {provider}</div>
-                    <div>
-                        <span class='fc-qty'>{int(row['Quantity'])}</span>
-                        <span class='fc-qty-label'>units available</span>
+                    <div class='fc-provider'>📍 <b>{city}</b>  •  🏢 {provider}</div>
+                    {contact_html}
+                    <div style='margin-top:6px'>
+                        {qty_badge}
                     </div>
-                    <div class='fc-tags'>
+                    <div class='fc-tags' style='margin-top:8px'>
                         <span class='tag {fc_cls}'>{fi} {ft}</span>
                         <span class='tag {mc_cls}'>{mi} {mt}</span>
                     </div>
-                    <div class='fc-expiry'>⏰ Expires: {expiry}</div>
+                    <div class='fc-expiry'>⏰ Best Before: {expiry[:10]}</div>
                 </div>
                 """, unsafe_allow_html=True)
                 st.markdown("<div style='margin-bottom:12px'></div>", unsafe_allow_html=True)
@@ -113,7 +134,7 @@ def display():
         # ── Analytics ────────────────────────────────────────────────────────
         a1, a2 = st.columns(2)
         with a1:
-            st.markdown("<div class='section-card'><h3>🥗 Food Type Breakdown</h3>", unsafe_allow_html=True)
+            st.markdown("<div class='section-card'><h3>🥗 Dietary Breakdown</h3>", unsafe_allow_html=True)
             ft_counts = df.groupby('Food_Type')['Quantity'].sum().reset_index()
             if not ft_counts.empty:
                 colors = {"Vegetarian":"#16a34a","Non-Vegetarian":"#ef4444","Vegan":"#06b6d4"}
@@ -128,7 +149,7 @@ def display():
             st.markdown("</div>", unsafe_allow_html=True)
 
         with a2:
-            st.markdown("<div class='section-card'><h3>🕐 Meal Type Quantities</h3>", unsafe_allow_html=True)
+            st.markdown("<div class='section-card'><h3>🕐 Meal Portions Distribution</h3>", unsafe_allow_html=True)
             mt_counts = df.groupby('Meal_Type')['Quantity'].sum().reset_index().sort_values('Quantity', ascending=True)
             if not mt_counts.empty:
                 meal_colors_list = ["#f59e0b","#16a34a","#06b6d4","#8b5cf6"]
@@ -146,7 +167,7 @@ def display():
             st.markdown("</div>", unsafe_allow_html=True)
 
         # Top 10 cities chart
-        st.markdown("<div class='section-card'><h3>🏙️ Cities by Available Quantity</h3>", unsafe_allow_html=True)
+        st.markdown("<div class='section-card'><h3>🏙️ Active Cities by Available Quantity</h3>", unsafe_allow_html=True)
         city_grp = df.groupby('Location')['Quantity'].sum().nlargest(10).reset_index()
         if not city_grp.empty:
             fig3 = px.bar(city_grp, x='Location', y='Quantity',

@@ -3,21 +3,85 @@ import os
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-# Robust connection to SQLite database regardless of working directory
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, 'food_waste.db')
-engine = create_engine(f'sqlite:///{DB_PATH}')
+def normalize_url(url: str) -> str:
+    """Normalize database URL for SQLAlchemy and remove problematic parameters."""
+    url = url.strip().strip("'\"")
+    url = url.replace("&channel_binding=require", "").replace("?channel_binding=require", "")
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+psycopg2://", 1)
+    elif url.startswith("postgresql://") and not url.startswith("postgresql+"):
+        url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+    return url
 
-# 0. Helper: Get all distinct cities
+def get_sqlite_url():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, 'food_waste.db')
+    return f'sqlite:///{db_path}'
+
+def create_db_engine():
+    """Create DB engine from Streamlit secrets, env var, with fallback to local SQLite."""
+    candidate_url = None
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and "DATABASE_URL" in st.secrets:
+            candidate_url = str(st.secrets["DATABASE_URL"]).strip()
+    except Exception:
+        pass
+
+    if not candidate_url:
+        candidate_url = os.environ.get("DATABASE_URL", "").strip()
+
+    if candidate_url:
+        norm_url = normalize_url(candidate_url)
+        try:
+            connect_args = {"connect_timeout": 5} if "psycopg2" in norm_url else {}
+            eng = create_engine(norm_url, pool_pre_ping=True, connect_args=connect_args)
+            with eng.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            return eng
+        except Exception as e:
+            print(f"[WARN] Cloud DB connection failed: {e}. Falling back to local SQLite.")
+
+    return create_engine(get_sqlite_url(), pool_pre_ping=True)
+
+engine = create_db_engine()
+
+def get_db_status():
+    """Returns information about active database connection."""
+    url = str(engine.url)
+    is_cloud = "sqlite" not in url.lower()
+    db_type = "Cloud PostgreSQL / MySQL" if is_cloud else "Local SQLite"
+    
+    # Mask credentials for display
+    masked_url = url
+    if "@" in masked_url:
+        masked_url = masked_url.split("@")[-1]
+    
+    counts = {}
+    try:
+        with engine.connect() as conn:
+            for tbl in ["providers", "receivers", "food_listings", "claims"]:
+                try:
+                    c = conn.execute(text(f"SELECT COUNT(*) FROM {tbl}")).scalar()
+                    counts[tbl] = int(c or 0)
+                except Exception:
+                    counts[tbl] = 0
+        return {"ok": True, "db_type": db_type, "is_cloud": is_cloud, "url": masked_url, "counts": counts}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "db_type": db_type, "is_cloud": is_cloud, "url": masked_url, "counts": {}}
+
+# 0. Helper: Get all distinct cities across providers, receivers, and food listings
 def get_all_cities():
     query = """
     SELECT DISTINCT City FROM providers WHERE City IS NOT NULL AND City != ''
     UNION
     SELECT DISTINCT City FROM receivers WHERE City IS NOT NULL AND City != ''
+    UNION
+    SELECT DISTINCT Location AS City FROM food_listings WHERE Location IS NOT NULL AND Location != ''
     ORDER BY City
     """
     df = pd.read_sql(query, engine)
-    return df['City'].tolist()
+    return df['City'].dropna().tolist()
 
 # 0. Helper: Get all receivers
 def get_all_receivers():
@@ -29,10 +93,70 @@ def get_all_providers():
     query = "SELECT Provider_ID, Name, Type, Address, City, Contact FROM providers ORDER BY Name"
     return pd.read_sql(query, engine)
 
+# 0. Helper: Register a new provider/restaurant
+def register_provider(name, ptype, city, contact, address=""):
+    with engine.begin() as conn:
+        max_id = conn.execute(text("SELECT COALESCE(MAX(Provider_ID), 0) FROM providers")).scalar()
+        new_id = int(max_id or 0) + 1
+        conn.execute(text("""
+            INSERT INTO providers (Provider_ID, Name, Type, Address, City, Contact)
+            VALUES (:pid, :name, :type, :address, :city, :contact)
+        """), {
+            "pid": new_id,
+            "name": name.strip(),
+            "type": ptype.strip(),
+            "address": address.strip() if address else city.strip(),
+            "city": city.strip(),
+            "contact": contact.strip()
+        })
+        return new_id
+
+# 0. Helper: Add a new food listing
+def add_food_listing(food_name, quantity, expiry_date, provider_id, provider_type, location, food_type, meal_type):
+    with engine.begin() as conn:
+        max_id = conn.execute(text("SELECT COALESCE(MAX(Food_ID), 0) FROM food_listings")).scalar()
+        new_id = int(max_id or 0) + 1
+        conn.execute(text("""
+            INSERT INTO food_listings (Food_ID, Food_Name, Quantity, Expiry_Date, Provider_ID, Provider_Type, Location, Food_Type, Meal_Type)
+            VALUES (:fid, :fname, :qty, :exp, :pid, :ptype, :loc, :ftype, :mtype)
+        """), {
+            "fid": new_id,
+            "fname": food_name.strip(),
+            "qty": int(quantity),
+            "exp": str(expiry_date),
+            "pid": int(provider_id),
+            "ptype": provider_type.strip(),
+            "loc": location.strip(),
+            "ftype": food_type.strip(),
+            "mtype": meal_type.strip()
+        })
+        return new_id
+
+# 0. Helper: Update an existing food listing
+def update_food_listing_field(food_id, field_name, new_value):
+    allowed_fields = ["Food_Name", "Quantity", "Expiry_Date", "Food_Type", "Meal_Type", "Location"]
+    if field_name not in allowed_fields:
+        raise ValueError(f"Field {field_name} is not allowed to be updated directly.")
+    with engine.begin() as conn:
+        query = text(f"UPDATE food_listings SET {field_name} = :val WHERE Food_ID = :fid")
+        res = conn.execute(query, {"val": new_value, "fid": int(food_id)})
+        return res.rowcount > 0
+
+# 0. Helper: Delete food listing
+def delete_food_listing(food_id):
+    with engine.begin() as conn:
+        res = conn.execute(text("DELETE FROM food_listings WHERE Food_ID = :fid"), {"fid": int(food_id)})
+        return res.rowcount > 0
+
 # 0. Helper: Get single food item
 def get_food_item_by_id(food_id):
-    query = "SELECT * FROM food_listings WHERE Food_ID = :fid"
-    df = pd.read_sql(text(query), engine, params={"fid": food_id})
+    query = """
+    SELECT f.*, p.Name AS Provider_Name, p.Contact AS Provider_Contact
+    FROM food_listings f
+    LEFT JOIN providers p ON f.Provider_ID = p.Provider_ID
+    WHERE f.Food_ID = :fid
+    """
+    df = pd.read_sql(text(query), engine, params={"fid": int(food_id)})
     return df.iloc[0].to_dict() if not df.empty else None
 
 # 0. Helper: Claim food item
@@ -44,7 +168,7 @@ def claim_food_item(food_id, receiver_id, status='Completed'):
         conn.execute(text("""
             INSERT INTO claims (Claim_ID, Food_ID, Receiver_ID, Status, Timestamp)
             VALUES (:cid, :fid, :rid, :status, :ts)
-        """), {"cid": new_claim_id, "fid": food_id, "rid": receiver_id, "status": status, "ts": now_str})
+        """), {"cid": new_claim_id, "fid": int(food_id), "rid": int(receiver_id), "status": status, "ts": now_str})
         return new_claim_id
 
 # 0. Helper: Get detailed claims log
