@@ -359,6 +359,30 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
+    try:
+        import queries
+        db_stat = queries.get_db_status()
+        if db_stat.get("is_cloud"):
+            db_badge = "🟢 Neon Cloud PostgreSQL"
+            badge_border = "rgba(52, 211, 153, 0.4)"
+            badge_bg = "rgba(16, 185, 129, 0.15)"
+            badge_txt = "#a7f3d0"
+        else:
+            db_badge = "💻 Local SQLite DB"
+            badge_border = "rgba(245, 158, 11, 0.4)"
+            badge_bg = "rgba(245, 158, 11, 0.15)"
+            badge_txt = "#fde68a"
+
+        st.markdown(f"""
+        <div style='text-align:center;margin:-8px 0 14px 0'>
+            <span style='background:{badge_bg};border:1px solid {badge_border};border-radius:20px;padding:3px 10px;font-size:0.68rem;font-weight:700;color:{badge_txt};letter-spacing:0.5px;'>
+                {db_badge}
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+    except Exception:
+        pass
+
     tab = st.radio("", [
         "🏠  Dashboard",
         "🍱  Food Listings",

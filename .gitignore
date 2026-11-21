@@ -21,7 +21,6 @@ env/
 Thumbs.db
 
 # Temporary / diagnostic files
-check.py
 *.log
 
 # Duplicate nested folder (was left from zip extraction)

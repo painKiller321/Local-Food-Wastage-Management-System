@@ -30,45 +30,32 @@ This system allows users to:
 | Tool | Description |
 |------|-------------|
 | 🐍 Python | Main programming language |
-| 🧮 SQL (SQLite) | Backend database for food, claims, providers |
+| 🐘 Cloud PostgreSQL (Neon) | Production cloud database with auto-fallback to SQLite |
+| 🧮 SQL (SQLite) | Offline / local fallback database |
 | 📊 Streamlit | Web interface for visualizing and interacting |
 | 🧠 Pandas | Data handling and transformation |
-| 🧵 SQLAlchemy | SQL engine for Python-DB connection |
+| 🧵 SQLAlchemy | SQL engine for cross-database compatibility |
+| 📈 Plotly | Interactive visual charts and analytics |
 
 ---
 
 ## 📁 Project Structure
 
-📦 project-root/\
-├── app.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;             # Main Streamlit app interface\
-├── queries.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;         # SQL queries to fetch data from database\
-├── food_waste.db &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      # SQLite database storing all core data\
-├── views/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;            # Streamlit view files (summary, listings, contacts, etc.)\
-├── data/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;              # (Optional) CSV dataset files for providers, receivers, etc.\
-└── README.md &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;          # Project documentation
-
----
-
-## 📂 Datasets Used
-
-- **providers_data.csv** – Information about food donors.
-- **receivers_data.csv** – NGOs/individuals receiving food.
-- **food_listings_data.csv** – Food items available for claim.
-- **claims_data.csv** – Claimed food records.
-
----
-
-## ❓ SQL-Based Questions Answered
-
-The app answers 15+ real-world questions using SQL, such as:
-- Which cities have the most providers and receivers?
-- Who are the top food donors?
-- What meal types are most claimed?
-- What is the claim status distribution?
-- Who has the most successful claims?
-- What is the average food quantity claimed per receiver?
-
-All queries are implemented in [`queries.py`](queries.py) and visualized in the Streamlit app.
+📦 project-root/
+├── app.py                             # Main Streamlit app interface & sidebar navigation
+├── queries.py                         # Unified SQL engine (PostgreSQL + SQLite fallback)
+├── check.py                           # Diagnostic health check & database validator
+├── migrate_to_cloud.py                # Database migration utility (SQLite -> Cloud PostgreSQL)
+├── food_waste.db                      # Local SQLite database (offline fallback)
+├── requirements.txt                   # Production dependencies
+├── Dockerfile                         # Production Docker container configuration
+├── .dockerignore                      # Docker ignore rules
+├── .streamlit/
+│   ├── config.toml                    # Streamlit server & theme configuration
+│   ├── secrets.toml.example           # Example secrets configuration template
+│   └── secrets.toml                   # Local secrets (git-ignored for security)
+├── views/                             # UI Pages (Dashboard, Listings, Analytics, etc.)
+└── README.md                          # Project documentation
 
 ---
 
@@ -78,14 +65,49 @@ All queries are implemented in [`queries.py`](queries.py) and visualized in the 
    ```bash
    git clone https://github.com/chobheshubham/Local-Food-Wastage-Management-System.git
    cd Local-Food-Wastage-Management-System
+   ```
 
 2. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
-   
-3. **Run the Streamlit app:**
+   ```
+
+3. **Configure Database (Optional for Cloud):**
+   - Create `.streamlit/secrets.toml` (or use local SQLite by default):
+     ```toml
+     DATABASE_URL = "postgresql://user:password@neon-host/neondb?sslmode=require"
+     ```
+
+4. **Verify Database & System Health:**
+   ```bash
+   python check.py
+   ```
+
+5. **Run the Streamlit app:**
    ```bash
    streamlit run app.py
+   ```
+
+---
+
+## ☁️ How to Deploy
+
+### Option 1: Streamlit Community Cloud (Recommended - Free)
+1. Push your repository to GitHub (ensure `.streamlit/secrets.toml` is kept in `.gitignore`).
+2. Go to [share.streamlit.io](https://share.streamlit.io/) and log in with GitHub.
+3. Click **New app**, select your repository, branch (`main`), and set **Main file path** to `app.py`.
+4. Click **Advanced settings...** -> **Secrets** and paste:
+   ```toml
+   DATABASE_URL = "postgresql://neondb_owner:npg_wvF5pq1gZfnO@ep-proud-river-bdk9ig70-pooler.c-8.us-east-2.aws.neon.tech/neondb?sslmode=require"
+   ```
+5. Click **Deploy!** Your app is live with real-time cloud data.
+
+### Option 2: Docker / Container (Render, Railway, Hugging Face, GCP)
+Build and run the container:
+```bash
+docker build -t foodbridge .
+docker run -p 8501:8501 -e DATABASE_URL="your-database-url" foodbridge
+```
 
 ## ✅ Outcomes
 - A live dashboard showcasing food donation and claim activity.

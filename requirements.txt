@@ -7,3 +7,4 @@ openpyxl
 plotly
 psycopg2-binary
 pg8000
+psycopg[binary]

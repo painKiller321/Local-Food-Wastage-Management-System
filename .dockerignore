@@ -1,0 +1,9 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.streamlit/secrets.toml
+Food waste management system project.pdf
+Local-Food-Wastage-Management-System-main/

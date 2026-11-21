@@ -40,8 +40,9 @@ def display():
     ftypes = queries.get_common_food_types()
     status = queries.get_claim_status_distribution()
 
-    total_providers = 1000  # from DB
-    total_receivers = 1000
+    db_status = queries.get_db_status()
+    total_providers = db_status.get("counts", {}).get("providers", 1000)
+    total_receivers = db_status.get("counts", {}).get("receivers", 1000)
 
     # ── KPI Metric Row ───────────────────────────────────────────────────────
     cards_html = "<div class='metric-row'>"
