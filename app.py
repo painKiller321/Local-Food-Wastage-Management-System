@@ -251,131 +251,160 @@ section[data-testid="stSidebar"] .stRadio label[data-testid*="selected"] {
 .stTextArea textarea {
     border-radius: 10px !important;
     border: 1.5px solid #d1fae5 !important;
-    background: white !important;
+    background: #fafffe !important;
     font-family: 'Inter', sans-serif !important;
-    transition: border-color 0.2s !important;
+    transition: all 0.2s !important;
 }
-.stTextInput input:focus, .stNumberInput input:focus, .stSelectbox select:focus {
-    border-color: var(--primary) !important;
-    box-shadow: 0 0 0 3px rgba(16,185,129,0.15) !important;
+.stTextInput input:focus, .stNumberInput input:focus, .stSelectbox select:focus,
+.stTextArea textarea:focus {
+    border-color: #059669 !important;
+    box-shadow: 0 0 0 3px rgba(5,150,105,0.15) !important;
+    background: white !important;
 }
 
 /* ---- Alerts ---- */
-.stSuccess { border-radius: 10px !important; border-left: 4px solid #16a34a !important; }
-.stError   { border-radius: 10px !important; border-left: 4px solid #ef4444 !important; }
-.stWarning { border-radius: 10px !important; border-left: 4px solid #f59e0b !important; }
-.stInfo    { border-radius: 10px !important; border-left: 4px solid #06b6d4 !important; }
+.stSuccess { border-radius: 12px !important; border-left: 4px solid #059669 !important; background: #ecfdf5 !important; }
+.stError   { border-radius: 12px !important; border-left: 4px solid #ef4444 !important; background: #fef2f2 !important; }
+.stWarning { border-radius: 12px !important; border-left: 4px solid #f59e0b !important; background: #fffbeb !important; }
+.stInfo    { border-radius: 12px !important; border-left: 4px solid #0ea5e9 !important; background: #f0f9ff !important; }
 
 /* ---- Eco Impact Banner ---- */
 .eco-banner {
-    background: linear-gradient(135deg, #064e3b, #065f46);
-    border-radius: 16px; padding: 24px 28px; margin: 20px 0;
+    background: linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%);
+    border-radius: 20px; padding: 28px 32px; margin: 20px 0;
     display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 16px;
-    box-shadow: 0 8px 24px rgba(6,78,59,0.25);
+    flex-wrap: wrap; gap: 20px;
+    box-shadow: 0 10px 30px rgba(6,78,59,0.3);
+    border: 1px solid rgba(52,211,153,0.2);
+    position: relative; overflow: hidden;
 }
-.eco-banner .eco-title { color: #a7f3d0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-.eco-banner .eco-value { color: white; font-size: 1.6rem; font-weight: 800; }
-.eco-banner .eco-sub { color: #6ee7b7; font-size: 0.8rem; }
+.eco-banner::before {
+    content: '🌱';
+    position: absolute; right: 24px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 5rem; opacity: 0.07;
+}
+.eco-banner .eco-item { flex: 1; min-width: 120px; padding: 0 12px; border-right: 1px solid rgba(255,255,255,0.1); }
+.eco-banner .eco-item:last-child { border-right: none; }
+.eco-banner .eco-title { color: #6ee7b7; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700; margin-bottom: 6px; }
+.eco-banner .eco-value { color: white; font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+.eco-banner .eco-sub { color: #a7f3d0; font-size: 0.78rem; margin-top: 3px; }
 
 /* ---- Food Card Grid ---- */
 .food-card {
-    background: white; border-radius: 14px;
-    padding: 18px; border: 1.5px solid var(--border);
-    box-shadow: 0 2px 12px rgba(16,185,129,0.08);
-    transition: all 0.25s ease;
+    background: white; border-radius: 16px;
+    padding: 20px; border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 10px 15px -3px rgba(0,0,0,0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     height: 100%; position: relative; overflow: hidden;
 }
-.food-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(16,185,129,0.18); border-color: var(--primary-light); }
-.food-card .fc-title { font-size: 1.05rem; font-weight: 700; color: #064e3b; margin-bottom: 6px; }
-.food-card .fc-provider { font-size: 0.8rem; color: #6b7280; margin-bottom: 10px; }
+.food-card:hover { transform: translateY(-5px); box-shadow: 0 20px 30px -10px rgba(5,150,105,0.2); border-color: #10b981; }
+.food-card .fc-title { font-size: 1.05rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.2px; }
+.food-card .fc-provider { font-size: 0.8rem; color: #64748b; margin-bottom: 10px; }
 .food-card .fc-qty {
-    font-size: 1.3rem; font-weight: 800; color: var(--primary);
-    display: inline-block; margin-right: 6px;
+    font-size: 1.5rem; font-weight: 800; color: #059669;
+    display: inline-block; margin-right: 4px; letter-spacing: -0.5px;
 }
-.food-card .fc-qty-label { font-size: 0.75rem; color: #9ca3af; }
+.food-card .fc-qty-label { font-size: 0.72rem; color: #94a3b8; font-weight: 600; }
 .food-card .fc-tags { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
-.food-card .fc-expiry { font-size: 0.75rem; color: #6b7280; margin-top: 10px; }
+.food-card .fc-expiry { font-size: 0.74rem; color: #94a3b8; margin-top: 10px; }
 .food-card .fc-corner {
     position: absolute; top: 0; right: 0;
-    width: 48px; height: 48px;
-    background: linear-gradient(135deg, transparent 50%, #d1fae5 50%);
-    border-top-right-radius: 14px;
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, transparent 50%, #dcfce7 50%);
+    border-top-right-radius: 16px;
 }
+.food-card .fc-urgency { font-size: 0.72rem; font-weight: 700; color: #dc2626; background: #fee2e2; padding: 2px 8px; border-radius: 999px; display: inline-block; margin-top: 6px; }
 
 /* ---- Progress Bar ---- */
-.progress-bar-wrap { margin: 6px 0; }
-.progress-bar-label { display: flex; justify-content: space-between; font-size: 0.75rem; color: #6b7280; margin-bottom: 3px; }
-.progress-bar-bg { background: #e5e7eb; border-radius: 999px; height: 7px; overflow: hidden; }
-.progress-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--primary-light), var(--primary)); transition: width 0.5s; }
+.progress-bar-wrap { margin: 8px 0; }
+.progress-bar-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: #64748b; margin-bottom: 5px; font-weight: 600; }
+.progress-bar-bg { background: #e2e8f0; border-radius: 999px; height: 8px; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #10b981, #059669); transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
 
 /* ---- Leaderboard ---- */
 .leader-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 14px; border-radius: 10px;
-    background: #f0fdf4; margin-bottom: 6px;
-    border: 1px solid #d1fae5;
-    transition: background 0.2s;
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 16px; border-radius: 12px;
+    background: #f8fafc; margin-bottom: 8px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s;
 }
-.leader-row:hover { background: #dcfce7; }
-.leader-rank { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: white; font-size: 0.8rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.leader-rank.gold   { background: linear-gradient(135deg, #f59e0b, #d97706); }
-.leader-rank.silver { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+.leader-row:hover { background: #ecfdf5; border-color: #bbf7d0; transform: translateX(2px); }
+.leader-rank { width: 32px; height: 32px; border-radius: 50%; background: #059669; color: white; font-size: 0.82rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.leader-rank.gold   { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 4px 10px rgba(245,158,11,0.3); }
+.leader-rank.silver { background: linear-gradient(135deg, #94a3b8, #64748b); }
 .leader-rank.bronze { background: linear-gradient(135deg, #d97706, #92400e); }
-.leader-name { font-weight: 600; font-size: 0.9rem; color: #064e3b; flex: 1; }
-.leader-sub  { font-size: 0.75rem; color: #6b7280; }
-.leader-value { font-weight: 800; font-size: 1.0rem; color: var(--primary-dark); }
+.leader-name { font-weight: 700; font-size: 0.92rem; color: #0f172a; flex: 1; }
+.leader-sub  { font-size: 0.75rem; color: #64748b; }
+.leader-value { font-weight: 800; font-size: 1rem; color: #059669; white-space: nowrap; }
 
 /* ---- Divider ---- */
-.fancy-divider { border: none; height: 2px; background: linear-gradient(90deg, var(--border), transparent); margin: 24px 0; border-radius: 2px; }
+.fancy-divider { border: none; height: 1px; background: linear-gradient(90deg, #d1fae5, transparent); margin: 24px 0; }
 
 /* ---- Timeline ---- */
 .timeline-item {
-    display: flex; gap: 14px; padding: 12px 0;
-    border-bottom: 1px solid #f0fdf4;
+    display: flex; gap: 16px; padding: 14px 0;
+    border-bottom: 1px solid #f1f5f9;
 }
-.timeline-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
-.timeline-content .tl-title { font-size: 0.9rem; font-weight: 600; color: #064e3b; }
-.timeline-content .tl-sub { font-size: 0.75rem; color: #9ca3af; }
+.timeline-item:last-child { border-bottom: none; }
+.timeline-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
+.timeline-content .tl-title { font-size: 0.92rem; font-weight: 700; color: #0f172a; }
+.timeline-content .tl-sub { font-size: 0.76rem; color: #94a3b8; margin-top: 3px; }
 
 /* ---- Plotly override ---- */
 .js-plotly-plot .plotly .modebar { display: none !important; }
 
 /* ---- Sidebar Logo area ---- */
 .sidebar-logo {
-    text-align: center; padding: 20px 10px 10px;
-    border-bottom: 1px solid rgba(255,255,255,0.15); margin-bottom: 16px;
+    text-align: center; padding: 24px 10px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;
 }
-.sidebar-logo .sb-title { font-size: 1.3rem; font-weight: 800; color: white; letter-spacing: -0.5px; }
-.sidebar-logo .sb-sub { font-size: 0.72rem; color: #6ee7b7; letter-spacing: 1px; text-transform: uppercase; }
+.sidebar-logo .sb-emoji { font-size: 2.6rem; display: block; margin-bottom: 6px; }
+.sidebar-logo .sb-title { font-size: 1.4rem; font-weight: 800; color: white; letter-spacing: -0.5px; }
+.sidebar-logo .sb-sub { font-size: 0.7rem; color: #6ee7b7; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
 
 /* ---- Tabs ---- */
-.stTabs [data-baseweb="tab-list"] { gap: 6px; border-bottom: 2px solid #d1fae5 !important; }
+.stTabs [data-baseweb="tab-list"] { gap: 4px; border-bottom: 2px solid #e2e8f0 !important; }
 .stTabs [data-baseweb="tab"] {
-    border-radius: 8px 8px 0 0 !important;
-    padding: 8px 20px !important;
-    font-weight: 600 !important; font-size: 0.85rem !important;
-    color: #6b7280 !important;
+    border-radius: 10px 10px 0 0 !important;
+    padding: 10px 22px !important;
+    font-weight: 600 !important; font-size: 0.88rem !important;
+    color: #64748b !important;
     border: none !important; background: transparent !important;
     transition: all 0.2s !important;
 }
+.stTabs [data-baseweb="tab"]:hover { color: #059669 !important; background: #f0fdf4 !important; }
 .stTabs [aria-selected="true"] {
-    color: var(--primary-dark) !important;
-    background: #d1fae5 !important;
-    border-bottom: 2px solid var(--primary) !important;
+    color: #064e3b !important; font-weight: 800 !important;
+    background: #dcfce7 !important;
+    border-bottom: 3px solid #059669 !important;
 }
 
 /* ---- Form ---- */
-.stForm { background: #f0fdf4; border-radius: 14px; padding: 20px; border: 1px solid #d1fae5; }
+.stForm { background: #f8fafc; border-radius: 16px; padding: 24px; border: 1px solid #e2e8f0; }
 
 /* ---- Expander ---- */
-.streamlit-expanderHeader { font-weight: 600 !important; color: var(--text) !important; border-radius: 10px !important; }
+.streamlit-expanderHeader { font-weight: 700 !important; color: #0f172a !important; border-radius: 12px !important; }
 
 /* ---- Scrollbar ---- */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #f0fdf4; }
-::-webkit-scrollbar-thumb { background: #a7f3d0; border-radius: 3px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #a7f3d0; border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: #34d399; }
+
+/* ---- Urgency Chip for expiring food ---- */
+.chip-urgent { background: #fee2e2; color: #dc2626; border-radius: 999px; padding: 3px 10px; font-size: 0.72rem; font-weight: 700; display: inline-block; }
+.chip-ok     { background: #dcfce7; color: #15803d; border-radius: 999px; padding: 3px 10px; font-size: 0.72rem; font-weight: 700; display: inline-block; }
+
+/* ---- Quick Action Panel ---- */
+.quick-action {
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+    border-radius: 14px; padding: 18px 20px; border: 1px dashed #86efac;
+    margin-bottom: 16px; text-align: center;
+}
+.quick-action h4 { color: #064e3b; font-size: 1rem; font-weight: 800; margin: 0 0 4px 0; }
+.quick-action p { color: #64748b; font-size: 0.82rem; margin: 0; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -383,7 +412,7 @@ section[data-testid="stSidebar"] .stRadio label[data-testid*="selected"] {
 with st.sidebar:
     st.markdown("""
     <div class='sidebar-logo'>
-        <div style='font-size:2.2rem'>🌿</div>
+        <span class='sb-emoji'>🌿</span>
         <div class='sb-title'>FoodBridge</div>
         <div class='sb-sub'>Wastage Management</div>
     </div>
@@ -393,19 +422,20 @@ with st.sidebar:
         import queries
         db_stat = queries.get_db_status()
         if db_stat.get("is_cloud"):
-            db_badge = "🟢 Neon Cloud PostgreSQL"
+            db_badge = "<span class='pulse-indicator'></span>Neon Cloud DB"
             badge_border = "rgba(52, 211, 153, 0.4)"
             badge_bg = "rgba(16, 185, 129, 0.15)"
             badge_txt = "#a7f3d0"
         else:
-            db_badge = "💻 Local SQLite DB"
+            db_badge = "💻 Local SQLite"
             badge_border = "rgba(245, 158, 11, 0.4)"
             badge_bg = "rgba(245, 158, 11, 0.15)"
             badge_txt = "#fde68a"
 
         st.markdown(f"""
-        <div style='text-align:center;margin:-8px 0 14px 0'>
-            <span style='background:{badge_bg};border:1px solid {badge_border};border-radius:20px;padding:3px 10px;font-size:0.68rem;font-weight:700;color:{badge_txt};letter-spacing:0.5px;'>
+        <div style='text-align:center;margin:-10px 0 16px 0'>
+            <span style='background:{badge_bg};border:1px solid {badge_border};border-radius:20px;
+                         padding:4px 12px;font-size:0.68rem;font-weight:700;color:{badge_txt};'>
                 {db_badge}
             </span>
         </div>
@@ -421,27 +451,43 @@ with st.sidebar:
         "⚙️  Manage Listings",
     ], label_visibility="collapsed")
 
-    st.markdown("<hr style='border:none;border-top:1px solid rgba(255,255,255,0.15);margin:16px 0'>", unsafe_allow_html=True)
+    st.markdown("<hr style='border:none;border-top:1px solid rgba(255,255,255,0.1);margin:18px 0'>", unsafe_allow_html=True)
 
     # Mini eco impact in sidebar
     try:
         import queries
         eco = queries.get_eco_impact_metrics()
+        db_stat2 = queries.get_db_status()
+        counts = db_stat2.get("counts", {})
         st.markdown(f"""
-        <div style='padding:14px;background:rgba(255,255,255,0.08);border-radius:12px;border:1px solid rgba(255,255,255,0.15)'>
-            <div style='font-size:0.7rem;color:#6ee7b7;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px'>🌍 Today's Impact</div>
-            <div style='color:white;font-size:1.1rem;font-weight:800;margin-bottom:2px'>{eco["total_meals"]:,}</div>
-            <div style='color:#a7f3d0;font-size:0.72rem;margin-bottom:10px'>Meals Available</div>
-            <div style='color:white;font-size:1.1rem;font-weight:800;margin-bottom:2px'>{eco["co2_saved_kg"]:,.0f} kg</div>
-            <div style='color:#a7f3d0;font-size:0.72rem;margin-bottom:10px'>CO₂ Saved</div>
-            <div style='color:white;font-size:1.1rem;font-weight:800;margin-bottom:2px'>{eco["completion_rate"]}%</div>
-            <div style='color:#a7f3d0;font-size:0.72rem'>Claim Success Rate</div>
+        <div style='padding:16px;background:rgba(255,255,255,0.07);border-radius:14px;border:1px solid rgba(255,255,255,0.12)'>
+            <div style='font-size:0.68rem;color:#6ee7b7;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;margin-bottom:14px'>
+                🌍 Live Impact Stats
+            </div>
+            <div style='display:grid;grid-template-columns:1fr 1fr;gap:12px'>
+                <div>
+                    <div style='color:white;font-size:1.15rem;font-weight:800'>{eco["total_meals"]:,}</div>
+                    <div style='color:#a7f3d0;font-size:0.68rem'>Meals Listed</div>
+                </div>
+                <div>
+                    <div style='color:white;font-size:1.15rem;font-weight:800'>{eco["co2_saved_kg"]:,.0f}kg</div>
+                    <div style='color:#a7f3d0;font-size:0.68rem'>CO₂ Saved</div>
+                </div>
+                <div>
+                    <div style='color:white;font-size:1.15rem;font-weight:800'>{eco["completion_rate"]}%</div>
+                    <div style='color:#a7f3d0;font-size:0.68rem'>Success Rate</div>
+                </div>
+                <div>
+                    <div style='color:white;font-size:1.15rem;font-weight:800'>{counts.get("claims",0):,}</div>
+                    <div style='color:#a7f3d0;font-size:0.68rem'>Total Claims</div>
+                </div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
     except Exception:
         pass
 
-    st.markdown("<div style='padding:16px 0 0;font-size:0.65rem;color:rgba(255,255,255,0.3);text-align:center'>FoodBridge v2.0 • Built with ❤️</div>", unsafe_allow_html=True)
+    st.markdown("<div style='padding:18px 0 0;font-size:0.63rem;color:rgba(255,255,255,0.3);text-align:center'>FoodBridge v2.1 • Built with ❤️ for communities</div>", unsafe_allow_html=True)
 
 # ── Route Views ───────────────────────────────────────────────────────────────
 page_key = tab.strip().split("  ")[-1]  # strip icon+spaces
